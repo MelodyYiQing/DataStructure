@@ -1,0 +1,72 @@
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#define STACK_INIT_SIZE 100
+#define STACKINCREMENT 10
+using namespace std;
+typedef int Status;
+typedef struct{
+    int* base;
+    int* top;
+    int stacksize;
+}SqStack;
+Status InitStack(SqStack&S)
+{
+    S.base=(int*)malloc(STACK_INIT_SIZE*sizeof(SqStack));
+    S.stacksize=STACK_INIT_SIZE;
+    if(!S.base)exit(0);
+    S.top=S.base;
+    return 1;
+}
+Status push(SqStack &S,int e)
+{
+    if(S.top-S.base>=S.stacksize)
+    {
+        S.base=(int*)realloc(S.base,(S.stacksize+STACKINCREMENT)*sizeof(SqStack));
+        if(!S.base) exit(0);
+        S.top=S.base+S.stacksize;
+        S.stacksize+=STACKINCREMENT;
+    }
+    *S.top++=e;
+    return 1;
+}
+Status pop(SqStack &S,int &e)
+{
+    if(S.top==S.base) return 0;
+    e=*--S.top;
+    return 1;
+}
+Status StackEmpty(SqStack S)
+{
+    if(S.top==S.base) return 1;
+    else return 0;
+}
+void conversion(int N,int x)
+{
+    int e;
+    SqStack S;
+    InitStack(S);
+    while(N)
+    {
+        push(S,N%x);
+        N=N/x;
+    }
+    while(!StackEmpty(S))
+    {
+        pop(S,e);
+        if(e>=10)
+            printf("%c",e+87);
+        else
+            printf("%d",e);
+    }
+}
+int main()
+{
+    int n,x;
+    cout<<"Please enter the number:";
+    cin>>n;
+    cout<<"进制：";
+    cin>>x;
+        conversion(n,x);
+    return 0;
+}
