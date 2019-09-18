@@ -1,0 +1,441 @@
+```cpp
+#include <bits/stdc++.h>
+using namespace std;
+int onum=0;
+int n=0;
+char passwords[10]={'2','0','1','8','3','0','2','2'};
+typedef struct station//航班的站点信息
+{
+    char name[20];
+    char date[100];
+}St;
+typedef struct seat//航班的座位信息
+{
+    int seatnum;
+    int nnum;
+    int price;
+    int discount;
+}Seat;
+typedef struct LNode//已定座位的客户信息
+{
+    int odernumber;
+    char name[10];
+    char id[20];
+    int seat;
+    int grade;
+    double price;
+    struct LNode* next;
+}LNode,*LinkList;
+typedef struct waitqueue
+{
+    char name[10];
+    int number;
+}QueList;
+typedef struct flight
+{
+    char name[8];//航班号
+    St depart;
+    St dest;
+    char duration[20];//时长
+    Seat seats[3];
+    LinkList order;
+    LinkList wait;
+}Flight;
+bool admin()
+{
+    char password[10];
+    printf("内部操作，请输入执行密码：");
+    scanf("%s",password);
+    if(!strcmp(password,passwords)) return 1;
+    return 0;
+}
+Flight airline[100];
+void ReadStudInfo(const char *fileName)
+{
+
+     FILE*fp;
+     fp=fopen(fileName,"r");
+     if(fp==NULL)
+     {
+        return;
+     }
+     fscanf(fp,"%d",&n);
+     for(int i=0;i<n;i++)
+     {
+         fscanf(fp,"%s",airline[i].name);
+         fscanf(fp,"%s",airline[i].depart.name);
+         fscanf(fp,"%s",airline[i].dest.name);
+         fscanf(fp,"%s",airline[i].dest.date);
+         fscanf(fp,"%s",airline[i].depart.date);
+         fscanf(fp,"%s",airline[i].duration);
+         for(int j=0;j<3;++j)
+         fscanf(fp,"%d%d%d",&airline[i].seats[j].price,&airline[i].seats[j].discount,&airline[i].seats[j].seatnum);
+         airline[i].order=(LinkList)malloc(sizeof(LNode));
+         airline[i].order->next=NULL;
+         airline[i].wait=(LinkList)malloc(sizeof(LNode));
+         airline[i].wait->next=NULL;
+     }
+     fclose(fp);
+
+}
+//调用函数读取文件生成航班的线性表
+void init()
+{
+    ReadStudInfo("E:\\软件实践\\航班信息1.txt");
+    printf("录入成功！\n");
+}
+
+void PPrint(int i)//输出一个航班信息
+{
+        printf("%s\t",airline[i].name); printf("%s\t",airline[i].duration);
+        printf("%s\t%s\t\t%s\t%s\t",airline[i].depart.name,airline[i].dest.name,airline[i].depart.date,airline[i].dest.date);
+        for(int j=0;j<3;++j)
+        {
+            if(j==0) printf("一等座\t");
+            else if(j==1) printf("\n\t\t\t\t\t\t\t\t\t\t商务座\t");
+            else printf("\n\t\t\t\t\t\t\t\t\t\t经济舱\t");
+            printf("\t%d\t%d%%off\t\t",airline[i].seats[j].price,airline[i].seats[j].discount);
+            printf("%d/%d",airline[i].seats[j].nnum,airline[i].seats[j].seatnum);
+        }printf("\n");
+}
+//输出所有航班信息
+void Print()
+{
+    printf("航班号\t时长\t出发城市\t降落城市\t起飞时间\t降落时间\t舱座等级\t票价\t折扣(%%off)\t满座率\n");
+    for(int i=0;i<n;++i)
+    {
+        PPrint(i);
+    }
+}
+//按航班号查询航班
+int query_Flight()
+{
+    char nam[10];
+    printf("请输入航班号：");
+    scanf("%s",nam);
+    for(int i=0;i<n;++i)
+    {
+        if(!strcmp(nam,airline[i].name))
+        {
+            return i;
+        }
+    }
+    return -1;
+}
+//按起飞降落查询航班
+void query()
+{
+    char d1[20],d2[20];
+    bool flag=0;
+    printf("请输入起飞城市：");scanf("%s",d1);
+    printf("请输入降落城市：");scanf("%s",d2);
+    for(int i=0;i<n;++i)
+    {
+        if(!strcmp(d1,airline[i].depart.name)&&!strcmp(d2,airline[i].dest.name))
+            {
+                printf("航班号\t时长\t出发城市\t降落城市\t起飞时间\t降落时间\t舱座等级\t票价\t折扣(%%off)\t满座率\n");
+                PPrint(i);flag=1;
+            }
+    }
+    if(!flag)printf("未查询到符合信息的航班\n");
+}
+//打印订单
+void PrintAOrder(LinkList s)
+{
+     printf("订单号：%08d\n",s->odernumber);
+     printf("乘客姓名：%s\n",s->name);
+     printf("乘客证件号码：%s\n",s->id);
+     printf("座位个数：%d\n",s->seat);
+     printf("舱座等级：");
+     {
+         if(s->grade==0) printf("一等舱\n");
+         else if(s->grade==0)  printf("商务舱\n");
+         else  printf("经济舱\n");
+     }
+     printf("票价：%.2lf\n",s->price);
+     printf("\n");
+}
+//生成订单
+void ListInsert_L(LinkList&L,int g,int n,double pr,bool flag)
+{
+    LinkList p=L;
+    while(p->next)
+    {
+        p=p->next;
+    }
+    LinkList s=(LinkList)malloc(sizeof(LNode));
+    s->odernumber=++onum;
+    printf("请输入乘客姓名：");
+    scanf("%s",s->name);
+    printf("请输入身份证号：");
+    scanf("%s",s->id);
+    s->seat=n;
+    s->grade=g;
+    s->price=pr;
+    s->next=p->next;
+    p->next=s;
+    if(flag)printf("订票成功！\n");
+    else printf("添加候选成功！\n");
+    PrintAOrder(s);
+}
+//订票是否可行
+void booking()
+{
+    int k,t;
+    char choice;
+    bool flag=0;
+    char name[10];
+    printf("请输入想要预定的航班号：");
+    scanf("%s",name);
+    char d1[20],d2[20];
+    for(int i=0;i<n;++i)
+    {
+        if(!strcmp(name,airline[i].name))
+        {
+            printf("请输入想要预定的舱位（一等座输入1/商务舱输入2/经济舱输入3）");
+            scanf("%d",&k);
+            int j=k-1;
+            printf("请输入想要预定的座位数");
+            scanf("%d",&t);
+            flag=1;
+            strcpy(d1,airline[i].depart.name);
+            strcpy(d2,airline[i].dest.name);
+            if(airline[i].seats[j].nnum+t<=airline[i].seats[j].seatnum)
+            {
+                printf("有满足的座位，是否确认订票？（Y/N）");
+                cin>>choice;
+                if(choice=='Y')
+                {
+                    airline[i].seats[j].nnum+=t;
+                    ListInsert_L(airline[i].order,j,t,airline[i].seats[j].price*(1-airline[i].seats[j].discount*0.01),1);
+
+                    return;
+                }
+            }
+            else
+            {
+                printf("当前航班不可订票，请问您愿意加入候补名单，等候通知么(Y/N)\n");
+                cin>>choice;
+                if(choice=='Y')
+                {
+                    ListInsert_L(airline[i].wait,j,t,airline[i].seats[j].price*(1-airline[i].seats[j].discount*0.01),0);
+                    return;
+                }
+                for(int jj=0;jj<3;++jj)
+                {
+                    if(airline[i].seats[jj].nnum+t<=airline[i].seats[jj].seatnum)
+                    {
+                    printf("该舱已满员，其他舱有空座位，如有需要，可以订票\n");
+                    PPrint(i);
+                    break;
+                    }
+                }
+
+            }
+
+        }
+    }
+    if(!flag) {printf("未查询到有关信息。");return;}
+    flag=0;
+    for(int i=0;i<n;++i)
+    {
+        if(!strcmp(d1,airline[i].depart.name)&&!strcmp(d2,airline[i].dest.name)&&strcmp(name,airline[i].name))
+            {
+                if(!flag)
+                    printf("其他相关线路可供咨询\n");
+                PPrint(i);
+                flag=1;
+            }
+    }
+    if(!flag) printf("十分抱歉，此外没有余下合适的航班了。\n");
+}
+//加入候选
+void _addcandidate(int i,LinkList&L,int num,int g,double price)
+{
+
+    LinkList p=L->next;
+    LinkList q=L;
+    while(p&&p->seat>num)
+    {
+        q=p;
+        p=p->next;
+    }
+
+    if(p)
+    {
+     printf("您排队的航班现有合适的余座，请您再次填写一下订票信息:\n");
+      ListInsert_L(airline[i].order,g,p->seat,price,1);
+      airline[i].seats[g].nnum+=p->seat;
+      num-=p->seat;
+      LinkList r;
+      r=p->next;
+      q->next=r;
+      free(p);if(num)_addcandidate(i,L,num,g,price);
+    }
+}
+//删除订单并且分析是否可以加入候选人
+void deleteorder()
+{
+    bool flag=admin();
+    if(!flag)
+    {
+        printf("密码错误！无权操作！\n");
+        return;
+    }
+    int ret=query_Flight();
+    if(ret==-1){printf("未查询到该次航班，请检查输入\n");return;}
+    int onumber;
+    printf("请您输入想要删除的订单号：");
+    scanf("%d",&onumber);
+    LinkList q=airline[ret].order;
+    LinkList p=airline[ret].order->next;
+    while(p&&p->odernumber!=onumber)
+    {
+        q=p;
+        p=p->next;
+    }
+    if(p)
+    {
+        char id[20];
+        printf("请输入乘客身份证号：");
+        scanf("%s",id);
+        if(strcmp(id,p->id))printf("身份信息错误，请重新尝试！\n");
+        else
+        {
+            LinkList r=p->next;
+            q->next=r;
+            int g=p->grade;
+            int num=p->seat;
+            airline[ret].seats[g].nnum-=num;
+            free(p);
+            printf("删除成功！\n");
+            _addcandidate(ret,airline[ret].wait,num,g,p->price);
+        }
+        return;
+    }
+    printf("删除订单失败，请稍后再试\n");
+}
+//打印航班的订单
+void PrintOder(LinkList L)
+{
+    LinkList p=L->next;
+    if(p==NULL)
+    {
+        printf("该航班还未有人订票\n");
+        return;
+    }
+    while(p)
+    {
+        PrintAOrder(p);
+        p=p->next;
+    }
+}
+//判断打印订单是否可行
+void flightorder()
+{
+    bool flag=admin();
+    if(!flag)
+    {
+        printf("密码错误！无权操作！\n");
+        return;
+    }
+    int ret=query_Flight();
+    if(ret==-1){printf("未查询到该次航班，请检查输入\n");return;}
+    PrintOder(airline[ret].order);
+}
+//修改订单
+void modifyflight()
+{
+    bool flag=admin();
+    if(!flag)
+    {
+        printf("密码错误！无权操作！\n");
+        return;
+    }
+    int ret=query_Flight();
+    if(ret==-1){printf("未查询到该次航班，请检查输入\n");return;}
+    printf("1.更改时间2.更改票价和折扣\n");
+    printf("按任意键退出");
+    int choice;
+    scanf("%d",&choice);
+    if(!choice) return;
+    if(choice==1)
+    {
+        memset(airline[ret].depart.date,0,sizeof(airline[ret].depart.date));
+        printf("输入起飞时间：\n");
+        scanf("%s",airline[ret].depart.date);
+        memset(airline[ret].dest.date,0,sizeof(airline[ret].dest.date));
+        printf("输入降落时间：\n");
+        scanf("%s",airline[ret].dest.date);
+        memset(airline[ret].duration,0,sizeof(airline[ret].duration));
+        printf("输入飞行时长：\n");
+        scanf("%s",airline[ret].duration);
+    }
+    if(choice==2)
+    {
+        for(int j=0;j<3;++j)
+        {
+            if(!j)printf("一等座");
+            if(j==1)printf("商务舱");
+            if(j==2)printf("经济舱");
+            printf("\n票价\n");
+            scanf("%d",&airline[ret].seats[j].price);
+            printf("折扣(x%%off)\n");
+            scanf("%d",&airline[ret].seats[j].discount);
+        }
+    }
+}
+void menu()
+{
+    while(1)
+    {
+        printf("********************Welcome to HUNNU Booking System**********************\n");
+        printf("*0.录入航班信息\t\t\t\t\t\t\t\t*\n");
+        printf("*1.所有航班信息\t\t\t\t\t\t\t\t*\n");
+        printf("*2.查询航班\t\t\t\t\t\t\t\t*\n");
+        printf("*3.机票查询\t\t\t\t\t\t\t\t*\n");
+        printf("*4.订票\t\t\t\t\t\t\t\t\t*\n");
+        printf("*5.删除订单\t\t\t\t\t\t\t\t*\n");
+        printf("*6.查询航班订单信息\t\t\t\t\t\t\t*\n");
+        printf("*7.修改航班信息\t\t\t\t\t\t\t\t*\n");
+        printf("*9.退出\t\t\t\t\t\t\t\t\t*\n");
+        printf("***********************************欢迎使用******************************\n");
+        printf("请输入操作编号：");
+        int op;
+        scanf("%d",&op);
+        switch(op)
+        {
+            case 0:init();break;
+            case 1:Print();break;
+            case 2:
+                {
+                    int ret=query_Flight();
+                    if(ret==-1) printf("未查询到相关航班，请检查输入是否有误！\n");
+                    else
+                    {printf("航班号\t时长\t出发城市\t降落城市\t起飞时间\t降落时间\t舱座等级\t票价\t折扣(%%off)\t满座率\n");PPrint(ret);}
+                }break;
+            case 3:
+                query();
+                break;
+            case 4:
+                booking();
+                break;
+            case 5:
+                deleteorder();
+                break;
+            case 6:
+                flightorder();
+                break;
+            case 7:
+                modifyflight();
+                break;
+            case 9:
+                return;
+        }
+    }
+}
+int main()
+{
+    menu();
+    return 0;
+}
